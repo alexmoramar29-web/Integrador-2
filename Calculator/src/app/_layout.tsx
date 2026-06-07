@@ -1,11 +1,7 @@
 import { Stack } from 'expo-router';
 
-export default function Layout() {
+export default function RootLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false, // Esto elimina la barra blanca de "Home" por completo
-      }}
-    />
+    <Stack screenOptions={{ headerShown: false }} />
   );
 }
