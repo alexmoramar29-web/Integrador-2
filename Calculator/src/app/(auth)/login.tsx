@@ -1,224 +1,185 @@
 import React, { useState } from 'react';
-import { router } from 'expo-router';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  Alert,
-  Platform,
-  ScrollView
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-
-// 🔌 Importamos tu lógica estrictamente separada
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { enviarRegistroBD } from '@/services/authServices';
 
-const Login: React.FC = () => {
-  const [tipoUsuario, setTipoUsuario] = useState<'cliente' | 'profesionista'>('cliente');
-  
-  // Estados para la tabla 'users'
+const Registro: React.FC = () => {
+  const router = useRouter();
+  const [nombre, setNombre] = useState<string>('');
   const [usuario, setUsuario] = useState<string>('');
-  const [nombreCompleto, setNombreCompleto] = useState<string>('');
   const [correo, setCorreo] = useState<string>('');
   const [contrasena, setContrasena] = useState<string>('');
+  const [cargando, setCargando] = useState<boolean>(false);
 
-  // Estados exclusivos para profesionistas
-  const [cedula, setCedula] = useState<string>('');
-  const [tarifa, setTarifa] = useState<string>('');
-  const [descripcion, setDescripcion] = useState<string>('');
-  const [carrera, setCarrera] = useState<string>('');
-  const [mostrarDropdown, setMostrarDropdown] = useState<boolean>(false);
-
-  const opcionesCarrera = ['Abogado', 'Doctor', 'Ingeniero en Sistemas', 'Dentista', 'Arquitecto'];
-
-  const mostrarAlerta = (titulo: string, mensaje: string) => {
-    if (Platform.OS === 'web') alert(`${titulo}: ${mensaje}`);
-    else Alert.alert(titulo, mensaje);
-  };
-
-  const handleSubmit = async () => {
-    if (!usuario || !nombreCompleto || !correo || !contrasena) {
-      mostrarAlerta('Error', 'Por favor llena todos los campos básicos');
+  const handleRegistro = async () => {
+    if (!nombre || !usuario || !correo || !contrasena) {
+      Alert.alert('Error', 'Por favor, llena todos los campos.');
       return;
     }
-    
-    if (tipoUsuario === 'profesionista' && (!carrera || !cedula || !tarifa || !descripcion)) {
-      mostrarAlerta('Error', 'Por favor completa tus datos profesionales');
-      return;
-    }
-    
-    const nuevosDatos = {
+
+    setCargando(true);
+
+    const datos = {
       username: usuario,
-      full_name: nombreCompleto,
+      full_name: nombre,
       email: correo,
-      password_hash: contrasena,
+      password_hash: contrasena, 
     };
 
-    const resultado = await enviarRegistroBD(nuevosDatos);
+    const resultado = await enviarRegistroBD(datos);
+    setCargando(false);
 
     if (resultado.exito) {
-      mostrarAlerta('¡Éxito!', 'Bienvenido a ProFinder. Tu cuenta está en la nube ☁️');
-      router.replace('/'); // Asegúrate de que esta ruta exista en tu app
+      Alert.alert('¡Éxito!', resultado.mensaje, [
+        { text: 'Ir al Login', onPress: () => router.replace('/login') }
+      ]);
     } else {
-      mostrarAlerta('Error', resultado.mensaje);
+      Alert.alert('Error al registrar', resultado.mensaje);
     }
   };
 
   return (
-    <LinearGradient colors={['#f3e8ff', '#e9d5ff', '#c084fc']} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        
-        <View style={styles.headerContainer}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>PF</Text>
-          </View>
-          <Text style={styles.title}>ProFinder</Text>
-          <Text style={styles.subtitle}>Encuentra especialistas de confianza</Text>
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Crear Cuenta</Text>
+        <Text style={styles.subtitle}>Únete a ProFinder y encuentra expertos</Text>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>NOMBRE COMPLETO</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Juan Pérez"
+            placeholderTextColor="#A0A0A0"
+            value={nombre}
+            onChangeText={setNombre}
+          />
         </View>
 
-        <View style={styles.card}>
-          
-          <View style={styles.tabBar}>
-            <TouchableOpacity 
-              style={[styles.tab, tipoUsuario === 'cliente' && styles.tabActive]}
-              onPress={() => setTipoUsuario('cliente')}
-            >
-              <Text style={[styles.tabText, tipoUsuario === 'cliente' && styles.tabTextActive]}>Cliente</Text>
-            </TouchableOpacity>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>NOMBRE DE USUARIO</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="juanperez123"
+            placeholderTextColor="#A0A0A0"
+            value={usuario}
+            onChangeText={setUsuario}
+            autoCapitalize="none"
+          />
+        </View>
 
-            <TouchableOpacity 
-              style={[styles.tab, tipoUsuario === 'profesionista' && styles.tabActive]}
-              onPress={() => setTipoUsuario('profesionista')}
-            >
-              <Text style={[styles.tabText, tipoUsuario === 'profesionista' && styles.tabTextActive]}>Profesionista</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>CORREO ELECTRÓNICO</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="correo@ejemplo.com"
+            placeholderTextColor="#A0A0A0"
+            value={correo}
+            onChangeText={setCorreo}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nombre de Usuario</Text>
-            <TextInput style={styles.input} placeholder="Ej. AlexSama29" placeholderTextColor="#a78bfa" value={usuario} onChangeText={setUsuario} />
-          </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>CONTRASEÑA</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••••••"
+            placeholderTextColor="#A0A0A0"
+            secureTextEntry
+            value={contrasena}
+            onChangeText={setContrasena}
+            autoCapitalize="none"
+          />
+        </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nombre Completo</Text>
-            <TextInput style={styles.input} placeholder="Ej. Alexandro Morales" placeholderTextColor="#a78bfa" value={nombreCompleto} onChangeText={setNombreCompleto} />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Correo Electrónico</Text>
-            <TextInput style={styles.input} placeholder="correo@ejemplo.com" placeholderTextColor="#a78bfa" value={correo} onChangeText={setCorreo} autoCapitalize="none" keyboardType="email-address" />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contraseña</Text>
-            <TextInput style={styles.input} placeholder="••••••••••••" placeholderTextColor="#a78bfa" secureTextEntry={true} value={contrasena} onChangeText={setContrasena} />
-          </View>
-
-          {tipoUsuario === 'profesionista' && (
-            <View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Tipo de Carrera / Servicio</Text>
-                <TouchableOpacity style={styles.dropdownTrigger} onPress={() => setMostrarDropdown(!mostrarDropdown)}>
-                  <Text style={[styles.dropdownTriggerText, !carrera && {color: '#a78bfa'}]}>
-                    {carrera || 'Selecciona tu profesión'}
-                  </Text>
-                  <Text style={{color: '#6b21a8', fontSize: 10}}>▼</Text>
-                </TouchableOpacity>
-
-                {mostrarDropdown && (
-                  <View style={styles.dropdownContainer}>
-                    {opcionesCarrera.map((opc, idx) => (
-                      <TouchableOpacity key={idx} style={styles.dropdownItem} onPress={() => { setCarrera(opc); setMostrarDropdown(false); }}>
-                        <Text style={styles.dropdownItemText}>{opc}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Número de Cédula Profesional</Text>
-                <TextInput style={styles.input} placeholder="Ej. 12345678" placeholderTextColor="#a78bfa" value={cedula} onChangeText={setCedula} keyboardType="numeric" />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Costo por Consulta / Hora ($)</Text>
-                <TextInput style={styles.input} placeholder="Ej. 500" placeholderTextColor="#a78bfa" value={tarifa} onChangeText={setTarifa} keyboardType="numeric" />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Resumen de tu Experiencia</Text>
-                <TextInput style={[styles.input, styles.textArea]} placeholder="Breve biografía para tus clientes..." placeholderTextColor="#a78bfa" multiline={true} numberOfLines={3} value={descripcion} onChangeText={setDescripcion} />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Documentos y Títulos (Imágenes)</Text>
-                <TouchableOpacity style={styles.imageBox} onPress={() => mostrarAlerta('Galería', 'Se abrirá el selector de archivos.')}>
-                  <View style={styles.miniPlus}><Text style={{color:'#6b21a8', fontWeight:'bold', fontSize: 16}}>+</Text></View>
-                  <Text style={{fontSize: 12, color: '#6b21a8', fontWeight: '600'}}>Subir título o identificación</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+        <TouchableOpacity 
+          style={[styles.button, cargando && { opacity: 0.7 }]} 
+          onPress={handleRegistro}
+          disabled={cargando}
+        >
+          {cargando ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>¡REGISTRARME!</Text>
           )}
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.buttonMain} onPress={handleSubmit}>
-            <Text style={styles.buttonMainText}>¡COMENZAR!</Text>
-          </TouchableOpacity>
-
-          <View style={styles.separatorContainer}>
-            <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>O ENTRAR CON</Text>
-            <View style={styles.separatorLine} />
-          </View>
-
-          <View style={styles.oauthContainer}>
-            <TouchableOpacity style={styles.buttonOauth}><Text style={styles.buttonOauthText}>Google</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.buttonOauth}><Text style={styles.buttonOauthText}>Outlook</Text></TouchableOpacity>
-          </View>
-
-        </View>
-        <Text style={styles.footerText}>profinder.com</Text>
-      </ScrollView>
-    </LinearGradient>
+        <TouchableOpacity onPress={() => router.replace('/login')}>
+          <Text style={styles.loginLink}>¿Ya tienes cuenta? Inicia sesión aquí</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, paddingHorizontal: 20, minHeight: Platform.OS === 'web' ? '100vh' as any : undefined },
-  headerContainer: { alignItems: 'center', marginBottom: 20 },
-  logoCircle: { width: 85, height: 85, backgroundColor: '#a855f7', borderRadius: 42.5, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  logoText: { color: '#fff', fontSize: 26, fontWeight: '900', textAlign: 'center' },
-  title: { fontSize: 32, fontWeight: '900', color: '#3b0764' },
-  subtitle: { fontSize: 13, color: '#6b21a8', fontWeight: '500', marginTop: 2 },
-  card: { backgroundColor: '#ffffff', width: '100%', maxWidth: 380, borderRadius: 40, padding: 26, shadowColor: '#7c3aed', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 20 },
-  tabBar: { flexDirection: 'row', backgroundColor: '#f3e8ff', borderRadius: 20, padding: 4, marginBottom: 15 },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 16 },
-  tabActive: { backgroundColor: '#ffffff' },
-  tabText: { fontSize: 13, fontWeight: '700', color: '#a78bfa' },
-  tabTextActive: { color: '#6b21a8' },
-  inputGroup: { marginBottom: 14 },
-  label: { fontSize: 11, fontWeight: '700', color: '#5b21b6', marginBottom: 5, textTransform: 'uppercase', marginLeft: 10 },
-  input: { backgroundColor: '#f3e8ff', borderRadius: 25, paddingHorizontal: 20, paddingVertical: 11, fontSize: 14, color: '#5b21b6' },
-  textArea: { borderRadius: 15, height: 65, textAlignVertical: 'top', paddingTop: 10 },
-  dropdownTrigger: { backgroundColor: '#f3e8ff', borderRadius: 25, paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownTriggerText: { fontSize: 14, color: '#5b21b6' },
-  dropdownContainer: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e9d5ff', borderRadius: 15, marginTop: 5, overflow: 'hidden' },
-  dropdownItem: { paddingVertical: 10, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: '#f3e8ff' },
-  dropdownItemText: { fontSize: 14, color: '#5b21b6' },
-  imageBox: { borderWidth: 1, borderColor: '#c084fc', borderStyle: 'dashed', borderRadius: 20, padding: 12, backgroundColor: '#faf5ff', flexDirection: 'row', alignItems: 'center', gap: 12 },
-  miniPlus: { width: 40, height: 40, backgroundColor: '#e9d5ff', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  buttonMain: { backgroundColor: '#c084fc', borderRadius: 25, paddingVertical: 13, alignItems: 'center', marginTop: 12 },
-  buttonMainText: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
-  separatorContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
-  separatorLine: { flex: 1, height: 1, backgroundColor: '#e9d5ff' },
-  separatorText: { fontSize: 10, color: '#a78bfa', fontWeight: '700', marginHorizontal: 10 },
-  oauthContainer: { flexDirection: 'row', justifyContent: 'space-between' },
-  buttonOauth: { flex: 0.47, borderWidth: 1, borderColor: '#e9d5ff', borderRadius: 25, paddingVertical: 10, alignItems: 'center', backgroundColor: '#faf5ff' },
-  buttonOauthText: { fontSize: 13, fontWeight: '700', color: '#6b21a8' },
-  footerText: { fontSize: 12, color: '#5b21b6', fontWeight: '700', marginTop: 20, opacity: 0.3, textAlign: 'center' }
+  container: {
+    flex: 1,
+    backgroundColor: '#C5A3FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 30,
+    padding: 30,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#3B0764',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#701A75',
+    marginBottom: 25,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#6B21A8',
+    marginBottom: 6,
+  },
+  input: {
+    width: '100%',
+    backgroundColor: '#F3E8FF',
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#000000',
+  },
+  button: {
+    width: '100%',
+    backgroundColor: '#A855F7',
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 15,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  loginLink: {
+    color: '#7E22CE',
+    fontSize: 13,
+    fontWeight: '600',
+  },
 });
 
-export default Login;
+export default Registro;
